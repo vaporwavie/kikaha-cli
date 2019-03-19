@@ -1,0 +1,34 @@
+#!/bin/sh
+# Kikaha Project Watcher
+# Since: 12/Mar/2019
+
+# VARIABLES
+CWD=`pwd`
+KDIR=$(cd `dirname "${0}"` && pwd)
+KIKAHA_STATUS=$(ps -ef | grep kikaha | grep -v grep | grep -v kikaha-cli | wc -l)
+KIKAHA=$0
+
+cd $CWD
+
+# INCLUDES
+for include in $KDIR/base/inc.*.sh; do
+	. $include
+done
+
+# CONFIGURATIONS
+for conf in $KDIR/conf/*.conf; do
+	debug "Reading configuration: $(grape $conf)"
+	. $conf
+done
+
+if [ $KIKAHA_STATUS != 0 ]; then
+  echo $(grape Status:) 'Kikaha service is currently running.'
+else
+  echo $(grape Status:) 'Kikaha service is not running.'
+  echo 'Restarting Kikaha...'
+  sudo bash kikaha.sh start 2>/dev/null || echo 'You must be in a production environment in order to use the watcher.' && exit;
+fi
+
+sleep 2
+
+while true; do exec "./watcher"; done
