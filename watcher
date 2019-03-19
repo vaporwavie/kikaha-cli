@@ -7,7 +7,9 @@ CWD=`pwd`
 KDIR=$(cd `dirname "${0}"` && pwd)
 KIKAHA_STATUS=$(ps -ef | grep kikaha | grep -v grep | grep -v kikaha-cli | wc -l)
 KIKAHA=$0
-
+SLACK_HOOK=$(awk -F 'SLACK_HOOK=' '{print $2}' .env)
+SLACK_ERROR='You must provide the slack token at .env so we can send you a warning.'
+ENV_ERROR='You must be in a production environment in order to use the watcher.'
 cd $CWD
 
 # INCLUDES
@@ -26,7 +28,8 @@ if [ $KIKAHA_STATUS != 0 ]; then
 else
   echo $(grape Status:) 'Kikaha service is not running.'
   echo 'Restarting Kikaha...'
-  sudo bash kikaha.sh start 2>/dev/null || echo 'You must be in a production environment in order to use the watcher.' && exit;
+  curl --silent -X POST -H 'Content-type: application/json' --data '{"text":"*[FAKE]* A instância do projeto `catalog` não está ativa. Executando novamente..."}' $SLACK_HOOK || echo $SLACK_ERROR
+  sudo bash kikaha.sh start 2>/dev/null || echo $ENV_ERROR && exit;
 fi
 
 sleep 2
